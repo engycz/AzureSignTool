@@ -303,8 +303,16 @@ namespace AzureSignTool
                                 logger.LogInformation("Skipping already signed file.");
                                 return (state.succeeded + 1, state.failed);
                             }
+                            // Sign in STA apartment thread
+                            int result = E_INVALIDARG;
+                            var thread = new System.Threading.Thread(o =>
+                            {
+                                result = signer.SignFile(filePath, Description, DescriptionUri, performPageHashing, logger);
+                            });
+                            thread.SetApartmentState(ApartmentState.STA);
+                            thread.Start();
+                            thread.Join();
 
-                            var result = signer.SignFile(filePath, Description, DescriptionUri, performPageHashing, logger);
                             switch (result)
                             {
                                 case COR_E_BADIMAGEFORMAT:
